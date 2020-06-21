@@ -1,9 +1,9 @@
-﻿using System;
+﻿using System.Collections;
 using UnityEngine;
 
 public class Enemy : AbstractEnemy, IEnemySkills
 {
-    private static int SPEED = 10;
+    private const int SPEED = 10;
 
     public bool isDead
     {
@@ -24,7 +24,6 @@ public class Enemy : AbstractEnemy, IEnemySkills
             {
                 Attack();
                 Manager.manager.UnregistredEnemy(this);
-                Manager.manager.WaveOver();
             }
         }
 
@@ -58,7 +57,6 @@ public class Enemy : AbstractEnemy, IEnemySkills
         Manager.manager.killedEnemyOnWave++;
         Manager.manager.killedEnemyCount++;
         Manager.manager.gold += dropGold;
-        Manager.manager.WaveOver();
     }
 
     /// <inheritdoc />
@@ -67,39 +65,38 @@ public class Enemy : AbstractEnemy, IEnemySkills
         Manager.manager.playerHealth -= damageOnFort;
     }
 
-    private void Awake()
-    {
-        health = 2;
-    }
-
     private void Start()
     {
         enemyTransform = GetComponent<Transform>();
         collider2D = GetComponent<Collider2D>();
         Manager.manager.RegistredEnemy(this);
+        StartCoroutine(CheckAndMoveEnemy());
     }
 
-    private void Update()
+    IEnumerator CheckAndMoveEnemy()
     {
-        if (turnPoints != null && !isDead)
+        while (true)
         {
-
-            _navigationTime += SPEED * Time.fixedDeltaTime;
-            if (_navigationTime > navigation)
+            if (turnPoints != null && !isDead)
             {
-                if (target < turnPoints.Length)
+                _navigationTime += SPEED * Time.fixedDeltaTime;
+                if (_navigationTime > navigation)
                 {
-                    enemyTransform.position = Vector2.MoveTowards(enemyTransform.position,
-                        turnPoints[target].position, _navigationTime);
+                    if (target < turnPoints.Length)
+                    {
+                        enemyTransform.position = Vector2.MoveTowards(enemyTransform.position,
+                            turnPoints[target].position, _navigationTime);
+                    }
+                    else
+                    {
+                        enemyTransform.position =
+                            Vector2.MoveTowards(enemyTransform.position, finish.position, _navigationTime);
+                    }
+                    _navigationTime = 0;
                 }
-                else
-                {
-                    enemyTransform.position =
-                        Vector2.MoveTowards(enemyTransform.position, finish.position, _navigationTime);
-                }
-
-                _navigationTime = 0;
             }
+            yield return new WaitForEndOfFrame();
         }
     }
-} 
+}
+    

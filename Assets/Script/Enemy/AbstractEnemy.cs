@@ -17,6 +17,4 @@ public abstract class AbstractEnemy : MonoBehaviour
     public int damageOnFort;
     public int dropGold;
     
-    
-    
 }

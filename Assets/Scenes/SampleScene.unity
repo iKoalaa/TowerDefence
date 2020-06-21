@@ -3327,6 +3327,7 @@ MonoBehaviour:
   playLabel: {fileID: 1781553892}
   totalKilledLabel: {fileID: 1422206883}
   playButton: {fileID: 994615962}
+  tower: {fileID: 9153795440258235168, guid: 44d801bf92306414ca2af5e0d62ad612, type: 3}
   spawn: {fileID: 7976289374161369213}
   enemyObject: {fileID: 2514252808765024215, guid: cb4c82c2a1610ab47b78a8de886b9e23,
     type: 3}

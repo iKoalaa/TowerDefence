@@ -13,6 +13,6 @@
     /// <summary>
     /// Наносит урон по врагу.
     /// </summary>
-    /// <param name="damage">Урон.</param>
+    /// <param name="bullet">Снаряд.</param>
     void HitOnEnemy(Bullet bullet);
 }

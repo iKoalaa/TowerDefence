@@ -22,12 +22,18 @@ public interface ITowerSkills
     void Attack();
 
     /// <summary>
-    /// Корутина движения снаряда к цели.
+    /// Двигает снаряд к цели.
     /// </summary>
     /// <param name="bullet">Снаряд.</param>
     /// <param name="targetEnemy">Цель.</param>
     /// <returns></returns>
     IEnumerator MovedBullet(Transform bullet, Enemy targetEnemy);
+
+    /// <summary>
+    /// Атакует врагов, находящихся в радиусе.
+    /// </summary>
+    /// <returns></returns>
+    IEnumerator AttackEnemyInRadius();
 
     /// <summary>
     /// Вычисляет дистанцию до цели.

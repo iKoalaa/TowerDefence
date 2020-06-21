@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class Tower : AbstractTower, ITowerSkills
 {
@@ -74,6 +72,50 @@ public class Tower : AbstractTower, ITowerSkills
         catch (MissingReferenceException) {}
     }
 
+    public IEnumerator AttackEnemyInRadius()
+    {
+        while (true)
+        {
+            if(Manager.manager.playerHealth == 0)
+                yield break;
+            
+            attackCounter -= Time.fixedDeltaTime;
+            var nearestEnemy = GetNearestEnemy();
+
+            if (isAttack)
+            {
+                Attack();
+            }
+
+            if (target == null || target.isDead)
+            {
+                if (nearestEnemy != null &&
+                    Vector2.Distance(transform.localPosition, nearestEnemy.transform.localPosition) <= attackRadius)
+                {
+                    target = nearestEnemy;
+                }
+            }
+            else
+            {
+                if (attackCounter <= 0)
+                {
+                    isAttack = true;
+                    attackCounter = attackSpeedDelay;
+                }
+                else
+                {
+                    isAttack = false;
+                }
+
+                if (Vector2.Distance(transform.localPosition, target.transform.localPosition) > attackRadius)
+                {
+                    target = null;
+                }
+            }
+            yield return new WaitForFixedUpdate();
+        }
+    }
+
     public float GetTargetDistance(Enemy targetEnemy)
     {
         if (targetEnemy == null)
@@ -88,51 +130,22 @@ public class Tower : AbstractTower, ITowerSkills
         return Mathf.Abs(Vector2.Distance(transform.localPosition, targetEnemy.transform.localPosition));
     }
 
-    private void FixedUpdate()
-    {
-        attackCounter -= Time.fixedDeltaTime;
-        var nearestEnemy = GetNearestEnemy();
-        
-        if (isAttack)
-        {
-            Attack();
-        }
-        
-        if (target == null || target.isDead)
-        {
-            //мб создать для этого метод проверки?
-            if (nearestEnemy !=null && 
-                Vector2.Distance(transform.localPosition, nearestEnemy.transform.localPosition) <= attackRadius)
-            {
-                target = nearestEnemy;
-            }
-        }
-        else
-        {
-            if (attackCounter <= 0)
-            {
-                isAttack = true;
-
-                attackCounter = attackSpeedDelay;
-            }
-            else
-            {
-                isAttack = false;
-            }
-
-            if (Vector2.Distance(transform.localPosition, target.transform.localPosition) > attackRadius)
-            {
-                target = null;
-            }
-        }
-    }
-
-    private void Awake()
+    public void InitializeTowerStats()
     {
         level = 1;
         price = 10;
         attackSpeedDelay = 0.5f;
         attackRadius = 15;
         attackCounter = 0;
+    }
+
+    private void Start()
+    {
+        StartCoroutine(AttackEnemyInRadius());
+    }
+
+    private void Awake()
+    {
+        InitializeTowerStats();
     }
 }

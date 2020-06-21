@@ -2,5 +2,6 @@
 {
     next,
     play,
-    gameOver
+    gameOver,
+    newGame
 }

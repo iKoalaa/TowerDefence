@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class Manager : MonoBehaviour
@@ -11,14 +9,23 @@ public class Manager : MonoBehaviour
     private const float DELAY = .5f;
     
     public static Manager manager;
-    
+
+    #region Private
+
     private int _killedEnemyCount;
-    private int _enemyCountOnScreen;
+    private int _spawnedSpawnedEnemyCount;
     private int _gold;
     private int _waveNumber;
     private int _playerHealth;
     private int _killedEnemyOnWave;
     private GameMode _mode;
+    
+    #endregion
+
+    #region Public
+    
+    [NonSerialized]
+    public List<Enemy> enemyList = new List<Enemy>();
 
     public Text currentWaveLabel; 
     public Text moneyLabel;
@@ -26,13 +33,16 @@ public class Manager : MonoBehaviour
     public Text playLabel;
     public Text totalKilledLabel;
     public Button playButton;
+    public Tower tower;
 
     public GameObject spawn;
     public Enemy enemyObject;
     public int totalEnemiesOnWave;
     public int enemiesPerSpawn;
+
+    #endregion
     
-    public List<Enemy> enemyList = new List<Enemy>();
+    #region Property
 
     public int killedEnemyCount 
     { 
@@ -46,12 +56,11 @@ public class Manager : MonoBehaviour
         set => _killedEnemyOnWave = value;
     }
 
-    public int enemyCountOnScreen
+    public int spawnedEnemyCount
     {
-        get => _enemyCountOnScreen;
-        set => _enemyCountOnScreen = value;
+        get => _spawnedSpawnedEnemyCount;
+        set => _spawnedSpawnedEnemyCount = value;
     }
-
 
     public int waveNumber
     {
@@ -71,26 +80,42 @@ public class Manager : MonoBehaviour
         set => _gold = value;
     }
 
+    #endregion
+    
     IEnumerator NewWave()
     {
         var spawnPosition = spawn.transform.position;
+        var enemy = enemyObject;
         
-        if (enemiesPerSpawn > 0 && enemyCountOnScreen < totalEnemiesOnWave)
+        while (spawnedEnemyCount < totalEnemiesOnWave)
         {
             for (int i = 0; i < enemiesPerSpawn; i++)
             {
-                Enemy newEnemy = Instantiate(enemyObject, spawnPosition, Quaternion.identity);
+                spawnedEnemyCount++;
+                Enemy newEnemy = Instantiate(enemy, spawnPosition, Quaternion.identity);
                 newEnemy.transform.position = spawnPosition;
-                enemyCountOnScreen++;
             }
 
             yield return new WaitForSeconds(DELAY);
-            StartCoroutine(NewWave());
+        }
+    }
+    
+    IEnumerator DrawStats()
+    {
+        while (true)
+        {
+            if (playerHealth <= 0)
+            {
+                playerHealth = 0;
+            }
+            healthLabel.text = "Health: " + playerHealth;
+            moneyLabel.text = "Money: " + gold;
+            currentWaveLabel.text = "Wave: " + waveNumber;
+            yield return null;
         }
     }
 
-
-    //подписка на добавление врагов в список(ниже отписка)
+    //подписка и отписка на добавление врагов в список.
 
     public void RegistredEnemy(Enemy enemy)
     {
@@ -103,113 +128,125 @@ public class Manager : MonoBehaviour
         Destroy(enemy.gameObject);
     }
 
-    public IEnumerator DrawStats()
+    public void PlayButtonPressed()
     {
-        healthLabel.text = "Health: " + playerHealth;
-        moneyLabel.text = "Money: " + gold;
-        currentWaveLabel.text = "Wave: " + waveNumber;
-
-        yield return null;
-        StartCoroutine(DrawStats());
+        var enemy = enemyObject;
+        //TODO: Не запускает следующую волну, разберись сегодня!
+        switch (_mode)
+        {
+            case GameMode.next:
+                waveNumber += 1;
+                totalEnemiesOnWave *= 2;
+                enemy.damageOnFort += 1;
+                enemy.health += waveNumber;
+                enemy.dropGold += 2;
+                killedEnemyOnWave = 0;
+                spawnedEnemyCount = 0;
+                StartCoroutine(NewWave());
+                break;
+            
+            case GameMode.gameOver:
+                totalKilledLabel.gameObject.SetActive(true);
+                totalKilledLabel.text = "Total Killed: " + killedEnemyCount;
+                _mode = GameMode.newGame;
+                PlayButtonPressed();
+                break;
+            
+            case GameMode.play:
+                StartCoroutine(NewWave());
+                break;
+            
+            case GameMode.newGame:
+                InitializeStats();
+                PlayButtonPressed();
+                break;
+        }
+        playButton.gameObject.SetActive(false);
     }
 
-    public void Menu()
+    private void Menu()
     {
         switch (_mode)
         {
             case GameMode.gameOver:
                 playLabel.text = "Play again.";
+                totalKilledLabel.text = "Total Killed:" + killedEnemyCount;
+                totalKilledLabel.gameObject.SetActive(true);
                 break;
+            
             case GameMode.next:
                 playLabel.text = "Next wave";
                 break;
+            
             case GameMode.play:
                 playLabel.text = "Play";
+                break;
+            
+            case GameMode.newGame:
+                playLabel.text = "New Game";
                 break;
         }
         
         playButton.gameObject.SetActive(true);
     }
 
-    public void WaveOver()
+    IEnumerator WaveOver()
     {
-        if (enemyCountOnScreen == totalEnemiesOnWave)
+        while (true)
         {
-            SetMode();
-            Menu();
-        }
-    }
+            if (spawnedEnemyCount == totalEnemiesOnWave && enemyList.Count == 0)
+            {
+                SetMode();
+                Menu();
+            }
 
-    public void PlayButtonPressed()
-    {
-        switch (_mode)
-        {
-            case GameMode.next:
-                StartCoroutine(NewWave());
-                waveNumber += 1;
-                totalEnemiesOnWave *= waveNumber;
-                enemyObject.damageOnFort += 1;
-                enemyObject.health += 2;
-                enemyObject.dropGold += 5;
-                killedEnemyOnWave = 0;
-                enemyCountOnScreen = 0;
-                break;
-            
-            case GameMode.gameOver:
-                totalKilledLabel.gameObject.SetActive(true);
-                totalKilledLabel.text = "Total Killed: " + killedEnemyCount;
-                break;
-            
-            default: 
-                totalEnemiesOnWave = 10;
-                waveNumber = 1;
-                enemyObject.damageOnFort = 1;
-                enemyObject.health = 2;
-                enemyObject.dropGold = 10;
-                killedEnemyCount = 0;
-                killedEnemyOnWave = 0;
-                enemyCountOnScreen = 0;
-                break;
+            yield return null;
         }
-
-        StartCoroutine(NewWave());
-        playButton.gameObject.SetActive(false);
     }
 
     private void SetMode()
     {
-        if (enemyCountOnScreen == totalEnemiesOnWave && playerHealth <= 0)
+        if (playerHealth <= 0)
         {
+            StopCoroutine(NewWave());
             _mode = GameMode.gameOver;
+            return;
         }
-        else
+
+        if (spawnedEnemyCount == totalEnemiesOnWave && killedEnemyOnWave == totalEnemiesOnWave)
         {
-            if (enemyCountOnScreen == totalEnemiesOnWave && playerHealth > 0)
-            {
-                _mode = GameMode.next;
-            }
-            else if (waveNumber > 1 && playerHealth > 0)
-            {
-                _mode = GameMode.next;
-            }
+            _mode = GameMode.next;
         }
     }
 
     private void Start()
     {
         StartCoroutine(DrawStats());
+        StartCoroutine(WaveOver());
         playButton.gameObject.SetActive(false);
         Menu();
     }
 
+    private void InitializeStats()
+    {
+        totalKilledLabel.gameObject.SetActive(false);
+        _mode = GameMode.play;
+        spawnedEnemyCount = 0;
+        playerHealth = 10;
+        gold = 50;
+        killedEnemyCount = 0;
+        totalEnemiesOnWave = 10;
+        waveNumber = 1;
+        enemyObject.damageOnFort = 1;
+        enemyObject.health = 2;
+        enemyObject.dropGold = 4;
+        killedEnemyOnWave = 0;
+        tower.InitializeTowerStats();
+    }
+
     void Awake()
     {
-        _mode = GameMode.play;
-        waveNumber = 0;
-        enemyCountOnScreen = 0;
-        playerHealth = 20;
-        gold = 50;
-        waveNumber = 1;
+        InitializeStats();
 
         if (manager == null)
         {

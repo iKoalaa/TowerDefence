@@ -128,7 +128,7 @@ MonoBehaviour:
   towerObject: {fileID: 5800504886325637026}
   level: 1
   price: 10
-  attackSpeedDelay: 0.64000005
+  attackSpeedDelay: 0.32768002
   attackRadius: 15
   attackCounter: 0
   bullet: {fileID: 1377255467766778197, guid: f5eef33806190264fb14ea91c5b3ac2a, type: 3}
